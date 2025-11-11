@@ -1,41 +1,22 @@
 "use client"
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, 
-  Eye, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
-  X, 
-  Send, 
-  MessageCircle, 
-  User, 
-  Calendar, 
-  Hash, 
-  Filter,
-  Search,
-  FileText,
-  Settings,
-  RefreshCw
+  Plus, Eye, Clock, AlertCircle, CheckCircle, X, Send, MessageCircle, 
+  User, Calendar, Hash, Filter, Search, FileText, Settings, RefreshCw
 } from 'lucide-react';
 
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  doc, 
-  onSnapshot, 
-  orderBy, 
-  query, 
-  serverTimestamp,
-  arrayUnion,
-  getDocs,
-  where
-} from 'firebase/firestore';
-import { auth, db as firebaseDb } from '../api/firebase';
+import { auth } from '../api/firebase';
+import supportTicketsAPI from '../api/support-tickets-api';
 
 const SupportTicketSystem = ({ organizationId }) => {
   const [tickets, setTickets] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    open: 0,
+    inProgress: 0,
+    resolved: 0,
+    closed: 0
+  });
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -53,79 +34,77 @@ const SupportTicketSystem = ({ organizationId }) => {
   const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Firebase collection path
-  const getTicketsCollection = () => {
-    if (organizationId) {
-      return collection(firebaseDb, `organizations/${organizationId}/supportTickets`);
-    }
-    return collection(firebaseDb, 'supportTickets');
-  };
-
-  // Load tickets from Firebase
+  // Load tickets and statistics
   useEffect(() => {
-    const loadTickets = () => {
-      try {
-        const ticketsRef = getTicketsCollection();
-        const q = query(ticketsRef, orderBy('createdAt', 'desc'));
-        
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          const ticketsData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate() || new Date(),
-            lastReply: doc.data().lastReply?.toDate() || new Date(),
-            chatHistory: doc.data().chatHistory || []
-          }));
-          
-          setTickets(ticketsData);
-          setLoading(false);
-        }, (error) => {
-          console.error('Error loading tickets:', error);
-          setError('Failed to load tickets');
-          setLoading(false);
-        });
+    loadData();
+    
+    // Set up polling for real-time updates (every 30 seconds)
+    const interval = setInterval(() => {
+      loadData(true); // Silent refresh
+    }, 30000);
 
-        return unsubscribe;
-      } catch (error) {
-        console.error('Error setting up tickets listener:', error);
-        setError('Failed to initialize support system');
+    return () => clearInterval(interval);
+  }, [organizationId]);
+
+  const loadData = async (silent = false) => {
+    try {
+      if (!silent) setLoading(true);
+      
+      const user = auth.currentUser;
+      
+      if (!user) {
+        const unsubscribe = auth.onAuthStateChanged((authUser) => {
+          if (authUser) {
+            unsubscribe();
+            loadData();
+          } else {
+            setError('Please log in to continue');
+            setLoading(false);
+          }
+        });
+        return;
+      }
+
+      console.log('Loading tickets via backend...');
+      
+      // Load tickets and statistics in parallel
+      const [ticketsData, statsData] = await Promise.all([
+        supportTicketsAPI.getAllTickets(organizationId),
+        supportTicketsAPI.getStatistics(organizationId)
+      ]);
+      
+      console.log('Tickets loaded:', ticketsData.length);
+      
+      setTickets(ticketsData);
+      setStats(statsData);
+      setLoading(false);
+      
+    } catch (err) {
+      console.error('Error loading tickets:', err);
+      if (!silent) {
+        setError('Failed to load tickets: ' + err.message);
         setLoading(false);
       }
-    };
-
-    const unsubscribe = loadTickets();
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [organizationId]);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const generateTicketId = async () => {
-    try {
-      const ticketsRef = getTicketsCollection();
-      const snapshot = await getDocs(ticketsRef);
-      const ticketCount = snapshot.size;
-      return `TK${String(ticketCount + 1).padStart(3, '0')}`;
-    } catch (error) {
-      console.error('Error generating ticket ID:', error);
-      return `TK${String(Date.now()).slice(-3)}`;
-    }
-  };
-
   const handleSubmitTicket = async (e) => {
     e.preventDefault();
     
     if (!formData.subject.trim() || !formData.reason.trim()) {
-      setError('Name and email are required');
+      setError('Subject and description are required');
+      setTimeout(() => setError(null), 3000);
       return;
     }
 
     if (!auth.currentUser) {
       setError('You must be logged in to create a ticket');
+      setTimeout(() => setError(null), 3000);
       return;
     }
 
@@ -133,44 +112,31 @@ const SupportTicketSystem = ({ organizationId }) => {
     setError(null);
 
     try {
-      const ticketId = await generateTicketId();
-      const ticketsRef = getTicketsCollection();
-      const currentTime = new Date();
+      console.log('Creating ticket via backend...');
       
-      const newTicket = {
-        ticketId: ticketId,
+      const ticketData = {
         subject: formData.subject.trim(),
         reason: formData.reason.trim(),
         priority: formData.priority,
         category: formData.category,
-        status: 'open',
-        createdAt: serverTimestamp(),
-        createdBy: auth.currentUser.email,
-        createdByName: auth.currentUser.displayName || auth.currentUser.email,
-        lastReply: serverTimestamp(),
-        organizationId: organizationId || null,
-        chatHistory: [
-          {
-            id: 1,
-            sender: auth.currentUser.email,
-            senderName: auth.currentUser.displayName || auth.currentUser.email,
-            senderType: 'admin',
-            message: formData.reason.trim(),
-            timestamp: currentTime // Use regular Date instead of serverTimestamp()
-          }
-        ]
+        organizationId: organizationId
       };
 
-      await addDoc(ticketsRef, newTicket);
+      await supportTicketsAPI.createTicket(ticketData);
       
       setFormData({ subject: '', reason: '', priority: 'medium', category: 'general' });
       setShowTicketForm(false);
       setSuccess('Ticket created successfully');
+      
+      // Refresh tickets
+      await loadData();
+      
       setTimeout(() => setSuccess(null), 3000);
       
     } catch (error) {
       console.error('Error creating ticket:', error);
       setError('Failed to create ticket: ' + error.message);
+      setTimeout(() => setError(null), 5000);
     } finally {
       setSubmitting(false);
     }
@@ -180,30 +146,15 @@ const SupportTicketSystem = ({ organizationId }) => {
     if (!newMessage.trim() || !selectedTicket || !auth.currentUser) return;
 
     try {
-      const currentTime = new Date();
-      const newChatMessage = {
-        id: selectedTicket.chatHistory.length + 1,
-        sender: auth.currentUser.email,
-        senderName: auth.currentUser.displayName || auth.currentUser.email,
-        senderType: 'admin',
-        message: newMessage.trim(),
-        timestamp: currentTime // Use regular Date instead of serverTimestamp()
-      };
-
-      const ticketRef = doc(firebaseDb, getTicketsCollection().path, selectedTicket.id);
+      console.log('Sending message via backend...');
       
-      await updateDoc(ticketRef, {
-        chatHistory: arrayUnion(newChatMessage),
-        lastReply: serverTimestamp()
-      });
+      const updatedTicket = await supportTicketsAPI.sendMessage(
+        selectedTicket.id,
+        newMessage.trim(),
+        organizationId
+      );
 
-      // Update local state for immediate UI feedback
-      const updatedTicket = {
-        ...selectedTicket,
-        chatHistory: [...selectedTicket.chatHistory, newChatMessage],
-        lastReply: currentTime
-      };
-
+      // Update local state
       setSelectedTicket(updatedTicket);
       setTickets(prev => prev.map(ticket => 
         ticket.id === selectedTicket.id ? updatedTicket : ticket
@@ -215,26 +166,45 @@ const SupportTicketSystem = ({ organizationId }) => {
       
     } catch (error) {
       console.error('Error sending message:', error);
-      setError('Failed to send message');
+      setError('Failed to send message: ' + error.message);
+      setTimeout(() => setError(null), 3000);
     }
   };
 
   const handleUpdateTicketStatus = async (ticketId, newStatus) => {
     try {
-      const ticketRef = doc(firebaseDb, getTicketsCollection().path, ticketId);
+      console.log('Updating ticket status via backend...');
       
-      await updateDoc(ticketRef, {
-        status: newStatus,
-        lastUpdated: serverTimestamp(),
-        updatedBy: auth.currentUser?.email || 'system'
-      });
+      await supportTicketsAPI.updateTicketStatus(ticketId, newStatus, organizationId);
+
+      // Update local state
+      setTickets(prev => prev.map(ticket => 
+        ticket.id === ticketId ? { ...ticket, status: newStatus } : ticket
+      ));
+
+      // Update stats
+      await loadData(true);
 
       setSuccess(`Ticket status updated to ${newStatus}`);
       setTimeout(() => setSuccess(null), 3000);
       
     } catch (error) {
       console.error('Error updating ticket status:', error);
-      setError('Failed to update ticket status');
+      setError('Failed to update ticket status: ' + error.message);
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
+  const handleOpenChat = async (ticket) => {
+    try {
+      // Fetch latest ticket data when opening chat
+      const latestTicket = await supportTicketsAPI.getTicket(ticket.id, organizationId);
+      setSelectedTicket(latestTicket);
+      setShowChatModal(true);
+    } catch (error) {
+      console.error('Error loading ticket:', error);
+      setError('Failed to load ticket details');
+      setTimeout(() => setError(null), 3000);
     }
   };
 
@@ -264,11 +234,11 @@ const SupportTicketSystem = ({ organizationId }) => {
     return matchesSearch && matchesStatus;
   });
 
-  const formatDateTime = (date) => {
-    if (!date) return 'N/A';
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
     
-    const dateObj = date instanceof Date ? date : new Date(date);
-    return dateObj.toLocaleDateString('en-US', {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -319,14 +289,23 @@ const SupportTicketSystem = ({ organizationId }) => {
                 <h1 className="text-2xl font-bold text-gray-900">Support Center</h1>
               </div>
             </div>
-            <button
-              onClick={() => setShowTicketForm(true)}
-              disabled={!auth.currentUser}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Plus size={16} />
-              <span>Create Ticket</span>
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => loadData()}
+                className="text-gray-600 hover:text-blue-600 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                title="Refresh tickets"
+              >
+                <RefreshCw size={20} />
+              </button>
+              <button
+                onClick={() => setShowTicketForm(true)}
+                disabled={!auth.currentUser}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus size={16} />
+                <span>Create Ticket</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -339,7 +318,7 @@ const SupportTicketSystem = ({ organizationId }) => {
               <MessageCircle className="h-8 w-8 text-blue-500" />
               <div className="ml-4">
                 <h3 className="text-sm font-medium text-gray-500">Total Tickets</h3>
-                <p className="text-2xl font-bold text-gray-900">{tickets.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
               </div>
             </div>
           </div>
@@ -349,9 +328,7 @@ const SupportTicketSystem = ({ organizationId }) => {
               <Clock className="h-8 w-8 text-red-500" />
               <div className="ml-4">
                 <h3 className="text-sm font-medium text-gray-500">Open</h3>
-                <p className="text-2xl font-bold text-gray-900">
-                  {tickets.filter(t => t.status === 'open').length}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{stats.open}</p>
               </div>
             </div>
           </div>
@@ -361,9 +338,7 @@ const SupportTicketSystem = ({ organizationId }) => {
               <RefreshCw className="h-8 w-8 text-yellow-500" />
               <div className="ml-4">
                 <h3 className="text-sm font-medium text-gray-500">In Progress</h3>
-                <p className="text-2xl font-bold text-gray-900">
-                  {tickets.filter(t => t.status === 'in_progress').length}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
               </div>
             </div>
           </div>
@@ -373,9 +348,7 @@ const SupportTicketSystem = ({ organizationId }) => {
               <CheckCircle className="h-8 w-8 text-green-500" />
               <div className="ml-4">
                 <h3 className="text-sm font-medium text-gray-500">Resolved</h3>
-                <p className="text-2xl font-bold text-gray-900">
-                  {tickets.filter(t => t.status === 'resolved').length}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{stats.resolved}</p>
               </div>
             </div>
           </div>
@@ -515,10 +488,7 @@ const SupportTicketSystem = ({ organizationId }) => {
                       
                       <td className="py-4 px-6">
                         <button
-                          onClick={() => {
-                            setSelectedTicket(ticket);
-                            setShowChatModal(true);
-                          }}
+                          onClick={() => handleOpenChat(ticket)}
                           className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
                           title="View Chat History"
                         >
@@ -685,7 +655,7 @@ const SupportTicketSystem = ({ organizationId }) => {
 
             {/* Chat Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {selectedTicket.chatHistory.map((message) => (
+              {selectedTicket.chatHistory?.map((message) => (
                 <div
                   key={message.id}
                   className={`flex ${message.senderType === 'admin' ? 'justify-end' : 'justify-start'}`}
@@ -701,7 +671,7 @@ const SupportTicketSystem = ({ organizationId }) => {
                         {message.senderType === 'admin' ? 'You' : 'Support'}
                       </span>
                       <span className="text-xs opacity-75">
-                        {formatDateTime(message.timestamp?.toDate ? message.timestamp.toDate() : message.timestamp)}
+                        {formatDateTime(message.timestamp)}
                       </span>
                     </div>
                     <p className="text-sm">{message.message}</p>
