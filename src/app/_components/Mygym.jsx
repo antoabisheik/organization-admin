@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Filter, Grid, List, Map, MapPin, Navigation } from 'lucide-react';
-import GymCard from './GymCard';
+import GymCard from './Gymcard';
 import GymMap from './GymMap';
 
 const MyGyms = ({ 
