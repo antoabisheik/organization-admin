@@ -8,7 +8,7 @@ class UserManagementAPI {
    */
   async getAllUsers() {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/all`, {
+      const response = await fetch(`${API_BASE_URL}/admin/users/all`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -34,7 +34,7 @@ class UserManagementAPI {
    */
   async transferUsers(userIds, targetGymId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/transfer`, {
+      const response = await fetch(`${API_BASE_URL}/admin/users/transfer`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ class UserManagementAPI {
    */
   async getStatistics() {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/statistics`, {
+      const response = await fetch(`${API_BASE_URL}/admin/users/statistics`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ class UserManagementAPI {
    */
   async updateUser(userId, userData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ class UserManagementAPI {
    */
   async deleteUser(userId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

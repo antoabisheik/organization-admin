@@ -47,10 +47,11 @@ function SignInForm() {
     }
 
     setLoading(true);
-    
+
     try {
       // ✅ Call YOUR backend middleware for login
-      const res = await fetch('http://localhost:5000/api/auth/login', {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -61,6 +62,15 @@ function SignInForm() {
 
       if (!res.ok) {
         throw new Error(data.error || 'Login failed');
+      }
+
+      // ✅ Debug: Check if session cookie was set
+      console.log('Login response:', data);
+      console.log('Response headers:', res.headers);
+
+      // ✅ Verify backend actually created a session
+      if (!data.success && !data.user) {
+        throw new Error('Backend did not create session');
       }
 
       toast.success('Login successful');
@@ -89,16 +99,17 @@ function SignInForm() {
   // ✅ Google Login - Get token from Firebase, send to YOUR backend
   const handleGoogleLogin = async () => {
     setLoading(true);
-    
+
     try {
       // Step 1: Get Google credentials via Firebase popup
       const result = await signInWithPopup(auth, googleProvider);
-      
+
       // Step 2: Get ID token
       const idToken = await result.user.getIdToken();
-      
+
       // Step 3: Send token to YOUR backend for verification
-      const res = await fetch('http://localhost:5000/api/auth/google-login', {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${API_BASE_URL}/auth/google-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -109,6 +120,15 @@ function SignInForm() {
 
       if (!res.ok) {
         throw new Error(data.error || 'Google login failed');
+      }
+
+      // ✅ Debug: Check if session cookie was set
+      console.log('Google login response:', data);
+      console.log('Response headers:', res.headers);
+
+      // ✅ Verify backend actually created a session
+      if (!data.success && !data.user) {
+        throw new Error('Backend did not create session');
       }
 
       toast.success('Login successful');

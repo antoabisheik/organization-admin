@@ -8,7 +8,7 @@ import organizationAPI from '../api/organization-api'; // Import API client
 // Component imports
 import Sidebar from '../_components/Sidebar';
 import Header from '../_components/Header';
-import MyGyms from '../_components/MyGym';
+import MyGyms from '../_components/Mygym';
 import SupportTicketSystem from '../_components/SupportTicketSystem';
 import Notifications from '../_components/Notifications';
 import Attendance from '../_components/Attendance';
@@ -19,21 +19,22 @@ import Users from '../_components/Users';
 const MainLayout = () => {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeComponent, setActiveComponent] = useState('my-gyms');
   const [isLoading, setIsLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
-  
+
   // User and Organization State
   const [user, setUser] = useState(null);
   const [organization, setOrganization] = useState(null);
-  
+
   // Data State
   const [gyms, setGyms] = useState([]);
   const [coaches, setCoaches] = useState([]);
   const [users, setUsers] = useState([]);
   const [trainers, setTrainers] = useState([]);
 
-  // ✅ Auth State Listener - Now uses backend middleware
+  // Auth State Listener - Now uses backend middleware
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setIsLoading(true);
@@ -42,7 +43,7 @@ const MainLayout = () => {
         try {
           console.log("User authenticated, fetching organization data...");
           
-          // ✅ Call backend middleware instead of direct Firebase
+          // Call backend middleware instead of direct Firebase
           const data = await organizationAPI.getCompleteData();
           
           setUser({
@@ -88,6 +89,7 @@ const MainLayout = () => {
 
   // Event Handlers
   const handleSidebarToggle = () => setSidebarOpen(!sidebarOpen);
+  const handleSidebarCollapse = () => setSidebarCollapsed(!sidebarCollapsed);
   const handleItemClick = (itemId) => setActiveComponent(itemId);
   const handleNotificationClick = () => setActiveComponent('notifications');
 
@@ -152,10 +154,10 @@ const MainLayout = () => {
   // Loading screen
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your organization...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-emerald-500 mx-auto"></div>
+          <p className="mt-6 text-gray-600 font-medium">Loading your organization...</p>
         </div>
       </div>
     );
@@ -164,18 +166,21 @@ const MainLayout = () => {
   // Access denied screen
   if (!user || !organization) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600 mb-4">
-            {!user 
-              ? "Please login to continue." 
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-red-500 text-3xl">⚠</span>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-6">
+            {!user
+              ? "Please login to continue."
               : "No organization found for your account."}
           </p>
           {!user && (
-            <button 
+            <button
               onClick={() => router.push('/signin')}
-              className="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 transition"
+              className="bg-emerald-500 text-white px-8 py-3 rounded-lg hover:bg-emerald-600 transition font-medium"
             >
               Go to Login
             </button>
@@ -186,20 +191,22 @@ const MainLayout = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-white">
       {/* Sidebar */}
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         activeItem={activeComponent}
         onItemClick={handleItemClick}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={handleSidebarCollapse}
       />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Header */}
-        <Header 
-          onMenuClick={handleSidebarToggle} 
+        <Header
+          onMenuClick={handleSidebarToggle}
           user={{
             name: user.displayName || user.email,
             email: user.email
@@ -210,28 +217,33 @@ const MainLayout = () => {
 
         {/* Organization Info Bar */}
         {organization && (
-          <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2">
+          <div className="bg-emerald-50 border-b border-gray-200 px-6 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center">
                     <span className="text-white font-semibold text-sm">
                       {organization.avatar || organization.name?.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div>
-                    <span className="font-medium text-emerald-900">
+                    <span className="font-semibold text-gray-900">
                       {organization.name}
                     </span>
-                    <span className="text-sm text-emerald-700 ml-2">
+                    <span className="text-sm text-gray-600 ml-2">
                       ({organization.role || 'Admin'})
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3 text-sm text-emerald-600">
-                  <span>• {gyms.length} Gyms</span>
-                  <span>• {coaches.length} Coaches</span>
-                  <span>• {organization.city}, {organization.state}</span>
+                <div className="flex items-center space-x-4 text-sm text-gray-600 ml-4">
+                  <span className="flex items-center">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></span>
+                    {gyms.length} {gyms.length === 1 ? 'Gym' : 'Gyms'}
+                  </span>
+                  <span className="flex items-center">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></span>
+                    {organization.city}, {organization.state}
+                  </span>
                 </div>
               </div>
             </div>
@@ -239,7 +251,7 @@ const MainLayout = () => {
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-gray-50">
           {renderActiveComponent()}
         </main>
       </div>

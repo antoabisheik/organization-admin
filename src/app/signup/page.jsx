@@ -1,6 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
-import SignUpForm from '../_Components/SignUp'
+import SignUpForm from '../_components/SignUp'
 
 function Page() {
   return (

@@ -8,7 +8,7 @@ class GymDetailsAPI {
    */
   async getGymDetails(gymId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/gyms/${gymId}/details`, {
+      const response = await fetch(`${API_BASE_URL}/admin/gyms/${gymId}/details`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -34,7 +34,7 @@ class GymDetailsAPI {
    */
   async addCoach(gymId, coachData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/gyms/${gymId}/coaches`, {
+      const response = await fetch(`${API_BASE_URL}/admin/gyms/${gymId}/coaches`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -61,7 +61,7 @@ class GymDetailsAPI {
    */
   async updateCoach(gymId, coachId, coachData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/gyms/${gymId}/coaches/${coachId}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/gyms/${gymId}/coaches/${coachId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ class GymDetailsAPI {
    */
   async assignHeadCoach(gymId, coachId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/gyms/${gymId}/coaches/${coachId}/assign-head-coach`, {
+      const response = await fetch(`${API_BASE_URL}/admin/gyms/${gymId}/coaches/${coachId}/assign-head-coach`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ class GymDetailsAPI {
    */
   async unassignHeadCoach(gymId, coachId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/gyms/${gymId}/coaches/${coachId}/unassign-head-coach`, {
+      const response = await fetch(`${API_BASE_URL}/admin/gyms/${gymId}/coaches/${coachId}/unassign-head-coach`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -9,8 +9,8 @@ class SupportTicketsAPI {
   async getAllTickets(organizationId = null) {
     try {
       const url = organizationId 
-        ? `${API_BASE_URL}/api/admin/support-tickets?organizationId=${organizationId}`
-        : `${API_BASE_URL}/api/admin/support-tickets`;
+        ? `${API_BASE_URL}/admin/support-tickets?organizationId=${organizationId}`
+        : `${API_BASE_URL}/admin/support-tickets`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -39,8 +39,8 @@ class SupportTicketsAPI {
   async getStatistics(organizationId = null) {
     try {
       const url = organizationId 
-        ? `${API_BASE_URL}/api/admin/support-tickets/statistics?organizationId=${organizationId}`
-        : `${API_BASE_URL}/api/admin/support-tickets/statistics`;
+        ? `${API_BASE_URL}/admin/support-tickets/statistics?organizationId=${organizationId}`
+        : `${API_BASE_URL}/admin/support-tickets/statistics`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -68,7 +68,7 @@ class SupportTicketsAPI {
    */
   async createTicket(ticketData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/support-tickets`, {
+      const response = await fetch(`${API_BASE_URL}/admin/support-tickets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ class SupportTicketsAPI {
    */
   async updateTicketStatus(ticketId, status, organizationId = null) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/support-tickets/${ticketId}/status`, {
+      const response = await fetch(`${API_BASE_URL}/admin/support-tickets/${ticketId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ class SupportTicketsAPI {
    */
   async sendMessage(ticketId, message, organizationId = null) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/support-tickets/${ticketId}/messages`, {
+      const response = await fetch(`${API_BASE_URL}/admin/support-tickets/${ticketId}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -150,8 +150,8 @@ class SupportTicketsAPI {
   async getTicket(ticketId, organizationId = null) {
     try {
       const url = organizationId 
-        ? `${API_BASE_URL}/api/admin/support-tickets/${ticketId}?organizationId=${organizationId}`
-        : `${API_BASE_URL}/api/admin/support-tickets/${ticketId}`;
+        ? `${API_BASE_URL}/admin/support-tickets/${ticketId}?organizationId=${organizationId}`
+        : `${API_BASE_URL}/admin/support-tickets/${ticketId}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -180,8 +180,8 @@ class SupportTicketsAPI {
   async deleteTicket(ticketId, organizationId = null) {
     try {
       const url = organizationId 
-        ? `${API_BASE_URL}/api/admin/support-tickets/${ticketId}?organizationId=${organizationId}`
-        : `${API_BASE_URL}/api/admin/support-tickets/${ticketId}`;
+        ? `${API_BASE_URL}/admin/support-tickets/${ticketId}?organizationId=${organizationId}`
+        : `${API_BASE_URL}/admin/support-tickets/${ticketId}`;
 
       const response = await fetch(url, {
         method: 'DELETE',

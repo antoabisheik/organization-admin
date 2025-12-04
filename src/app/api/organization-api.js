@@ -8,7 +8,10 @@ class OrganizationAPI {
    */
   async getCompleteData() {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/organizations/complete-data`, {
+      console.log('Fetching organization data from:', `${API_BASE_URL}/admin/organizations/complete-data`);
+      console.log('Cookies being sent:', document.cookie);
+
+      const response = await fetch(`${API_BASE_URL}/admin/organizations/complete-data`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -16,9 +19,13 @@ class OrganizationAPI {
         credentials: 'include',
       });
 
+      console.log('Organization API response status:', response.status);
+      console.log('Organization API response headers:', response.headers);
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch organization data');
+        console.error('Organization API error:', errorData);
+        throw new Error(errorData.error || 'Unauthorized - No valid authentication found');
       }
 
       const data = await response.json(); 
@@ -34,7 +41,7 @@ class OrganizationAPI {
    */
   async getMyOrganization() {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/organizations/my-organization`, {
+      const response = await fetch(`${API_BASE_URL}/admin/organizations/my-organization`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +67,7 @@ class OrganizationAPI {
    */
   async getGyms() {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/gyms`, {
+      const response = await fetch(`${API_BASE_URL}/admin/gyms`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -86,7 +93,7 @@ class OrganizationAPI {
    */
   async getCoaches() {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/coaches`, {
+      const response = await fetch(`${API_BASE_URL}/admin/coaches`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +119,7 @@ class OrganizationAPI {
    */
   async getUsers() {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+      const response = await fetch(`${API_BASE_URL}/admin/users`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -138,7 +145,7 @@ class OrganizationAPI {
    */
   async getTrainers() {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/trainers`, {
+      const response = await fetch(`${API_BASE_URL}/admin/trainers`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

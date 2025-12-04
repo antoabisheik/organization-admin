@@ -64,12 +64,13 @@ const SignUpForm = () => {
       // Step 3: Save additional user data to your backend
       try {
         const idToken = await userCredential.user.getIdToken();
-        
-        await fetch("http://localhost:5000/api/auth/save-user-data", {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+        await fetch(`${API_BASE_URL}/auth/save-user-data`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             idToken,
             name: name.trim(),
             phone: phone.trim() || null
@@ -114,9 +115,10 @@ const SignUpForm = () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
-      
+
       // Send to backend for session creation and user data storage
-      const res = await fetch("http://localhost:5000/api/auth/google-login", {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${API_BASE_URL}/auth/google-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
