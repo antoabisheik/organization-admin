@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import Image from 'next/image'
-import NewPasswordPage from '../_Components/NewPasswordPage'
+import NewPasswordPage from '../_components/NewPasswordPage'
 function Design() {
   return (
     <div className="min-h-screen bg-[url('/img_back.png')] bg-cover bg-center flex flex-col justify-between px-6 py-4">
@@ -11,7 +11,9 @@ function Design() {
       </div>
 
       <div className="flex-grow">
-        <NewPasswordPage />
+        <Suspense fallback={<div className="text-white text-center">Loading...</div>}>
+          <NewPasswordPage />
+        </Suspense>
       </div>
 
       <div className="text-white text-sm text-center">
