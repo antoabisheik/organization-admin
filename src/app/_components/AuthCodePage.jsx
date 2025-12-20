@@ -25,7 +25,7 @@ const AuthCodePage = () => {
   };
 
   return (
-    <div className="flex flex-start top-30 bg-[url('')] flex items-center justify-center px-8 sm:px-20 bg-gradient-to-r from-[#123425] to-[#0f1c1a] text-white relative">
+    <div className="flex flex-start top-30 flex items-center justify-center px-8 sm:px-20 bg-gradient-to-r from-[#123425] to-[#0f1c1a] text-white relative">
       <div className="max-w-md space-y-6">
         <h2 className="text-2xl text-center w-120 sm:text-3xl font-bold text-white">
           Enter Authentication Code
