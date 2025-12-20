@@ -1,10 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../api/firebase';
-import organizationAPI from '../api/organization-api'; // Import API client
-
 // Component imports
 import Sidebar from '../_components/Sidebar';
 import Header from '../_components/Header';
@@ -27,65 +23,41 @@ const MainLayout = () => {
   // User and Organization State
   const [user, setUser] = useState(null);
   const [organization, setOrganization] = useState(null);
+  const [gyms , setGyms] = useState(null);
+  
 
-  // Data State
-  const [gyms, setGyms] = useState([]);
-  const [coaches, setCoaches] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [trainers, setTrainers] = useState([]);
+useEffect(() => {
+  const checkSession = async () => {
+    setIsLoading(true);
 
-  // Auth State Listener - Now uses backend middleware
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setIsLoading(true);
-      
-      if (firebaseUser) {
-        try {
-          console.log("User authenticated, fetching organization data...");
-          
-          // Call backend middleware instead of direct Firebase
-          const data = await organizationAPI.getCompleteData();
-          
-          setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL
-          });
-          
-          setOrganization(data.organization);
-          setGyms(data.gyms || []);
-          setCoaches(data.coaches || []);
-          setUsers(data.users || []);
-          setTrainers(data.trainers || []);
-          
-          console.log("Organization data loaded successfully");
-          
-        } catch (error) {
-          console.error('Error loading organization data:', error);
-          
-          // If backend fails, show error but don't crash
-          setOrganization(null);
-          setGyms([]);
-          setCoaches([]);
-          setUsers([]);
-          setTrainers([]);
-        }
-      } else {
-        console.log("No user authenticated");
-        setUser(null);
-        setOrganization(null);
-        setGyms([]);
-        setCoaches([]);
-        setUsers([]);
-        setTrainers([]);
+    try {
+      const API_BASE_URL =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+      const res = await fetch(`${API_BASE_URL}/auth/verify-gym-access`, {
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        throw new Error('Not authenticated');
       }
-      
-      setIsLoading(false);
-    });
 
-    return unsubscribe;
-  }, []);
+      const data = await res.json();
+      setOrganization(data.organizations);
+      setGyms(data.gyms);
+      console.log(data.gyms);
+
+    } catch (err) {
+      console.error('Session invalid:', err);
+      setUser(null);
+      setOrganization(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  checkSession();
+}, []);
+
 
   // Event Handlers
   const handleSidebarToggle = () => setSidebarOpen(!sidebarOpen);
@@ -94,10 +66,10 @@ const MainLayout = () => {
   const handleNotificationClick = () => setActiveComponent('notifications');
 
   // Gym Handlers
-  const handleViewGym = (gym) => router.push(`/gym-details/${gym.id}`);
+  const handleViewGym = (gym) => router.push(`/gym-details/${gym.orgId}`);
   const handleEditGym = (gym) => alert(`Edit ${gym.name} - Coming soon!`);
   const handleAddGym = () => alert('Add gym - Coming soon!');
-  const handleAssignCoach = (gym) => router.push(`/gym-details/${gym.id}`);
+  const handleAssignCoach = (gym) => router.push(`/gym-details/${gym.orgId}`);
 
   // Coach Handlers
   const handleEditCoach = (coach) => alert(`Edit ${coach.name} - Coming soon!`);
@@ -113,9 +85,6 @@ const MainLayout = () => {
   const renderActiveComponent = () => {
     const componentProps = {
       gyms,
-      coaches,
-      users,
-      trainers,
       organization,
       isLoading: dataLoading,
       organizationId: organization?.id,
@@ -162,9 +131,9 @@ const MainLayout = () => {
       </div>
     );
   }
-
+  {console.log(organization)}
   // Access denied screen
-  if (!user || !organization) {
+  if (!organization) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center max-w-md">
@@ -207,10 +176,7 @@ const MainLayout = () => {
         {/* Header */}
         <Header
           onMenuClick={handleSidebarToggle}
-          user={{
-            name: user.displayName || user.email,
-            email: user.email
-          }}
+          
           onNotificationClick={handleNotificationClick}
           notificationCount={3}
         />

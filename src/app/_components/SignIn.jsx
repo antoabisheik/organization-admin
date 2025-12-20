@@ -18,71 +18,53 @@ function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
-  // Check if user is already logged in
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // User is already signed in, redirect
-        router.push('/my-gym');
-      } else {
-        console.log("No active session");
-      }
+
+ const handleEmailLogin = async (e) => {
+  e?.preventDefault();
+
+  if (!email.trim()) {
+    toast.error('Please enter your email');
+    return;
+  }
+
+  if (!password) {
+    toast.error('Please enter your password');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const API_BASE_URL =
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+    // LOGIN → get ID token
+    const loginRes = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
     });
 
-    return () => unsubscribe();
-  }, [router]);
+     console.log(loginRes.headers);
+     console.log(loginRes.body);
+    const loginData = await loginRes.json();
 
-  // ✅ Email/Password Login - Call YOUR backend instead of Firebase directly
-  const handleEmailLogin = async (e) => {
-    if (e) e.preventDefault();
-
-    if (!email.trim()) {
-      toast.error('Please enter your email');
-      return;
+    if (!loginRes.ok) {
+      throw new Error(loginData.error || 'Login failed');
     }
 
-    if (!password) {
-      toast.error('Please enter your password');
-      return;
-    }
+    console.log('Login response:', loginData);
+    toast.success('Login successful');
+    router.push('/my-gym');
 
-    setLoading(true);
+  } catch (err) {
+    console.error('Login error:', err);
 
-    try {
-      // ✅ Call YOUR backend middleware for login
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-
-      // ✅ Debug: Check if session cookie was set
-      console.log('Login response:', data);
-      console.log('Response headers:', res.headers);
-
-      // ✅ Verify backend actually created a session
-      if (!data.success && !data.user) {
-        throw new Error('Backend did not create session');
-      }
-
-      toast.success('Login successful');
-      router.push('/my-gym');
-      
-    } catch (err) {
-      console.error('Login error:', err);
-
-      // Handle specific error messages
-      const errorMessage = err.message.includes('INVALID_LOGIN_CREDENTIALS') ||
-        err.message.includes('INVALID_PASSWORD') ||
-        err.message.includes('EMAIL_NOT_FOUND')
+    const errorMessage =
+      err.message.includes('INVALID_LOGIN_CREDENTIALS') ||
+      err.message.includes('INVALID_PASSWORD') ||
+      err.message.includes('EMAIL_NOT_FOUND')
         ? 'Invalid email or password'
         : err.message.includes('TOO_MANY_ATTEMPTS_TRY_LATER')
         ? 'Too many failed attempts. Please try again later.'
@@ -90,13 +72,13 @@ function SignInForm() {
         ? 'This account has been disabled'
         : err.message || 'Failed to sign in';
 
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+    toast.error(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  // ✅ Google Login - Get token from Firebase, send to YOUR backend
+  // Google Login - Get token from Firebase, send to YOUR backend
   const handleGoogleLogin = async () => {
     setLoading(true);
 

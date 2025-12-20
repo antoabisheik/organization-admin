@@ -32,7 +32,7 @@ const RequestResetPage = () => {
     try {
       // Call your backend API endpoint for password reset
       // Adjust the path to match your backend route structure
-      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
