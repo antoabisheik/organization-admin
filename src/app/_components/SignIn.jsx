@@ -137,7 +137,7 @@ function SignInForm() {
   };
 
   return (
-    <div className="flex bg-gradient-to-r text-white relative min-h-screen">
+    <div className="flex bg-gradient-to-r  text-white relative min-h-screen">
       {loading && <LoadingOverlay />}
 
       <div className="flex flex-col px-6 mx-auto my-8 w-full max-w-sm z-10">
